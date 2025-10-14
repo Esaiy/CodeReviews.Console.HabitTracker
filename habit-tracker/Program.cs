@@ -216,13 +216,18 @@ static string GetDateInput()
 
     do
     {
-        Console.WriteLine("Please insert the date (dd-mm-yy): type 0 to return");
+        Console.WriteLine("Please insert the date (dd-mm-yy): type \"today\" to use today, 0 to return");
         dateInput = Console.ReadLine();
 
         if (string.IsNullOrWhiteSpace(dateInput))
         {
             Console.WriteLine("cannot be empty");
             continue;
+        }
+
+        if (dateInput == "today")
+        {
+            dateInput = DateTime.Today.ToString("dd-MM-yy", CultureInfo.CurrentCulture);
         }
 
         if (!DateTime.TryParseExact(dateInput, "dd-MM-yy", CultureInfo.CurrentCulture, DateTimeStyles.None, out _))
