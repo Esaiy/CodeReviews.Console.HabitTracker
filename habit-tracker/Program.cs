@@ -22,18 +22,18 @@ GetUserInput();
 
 static void GetUserInput()
 {
-    Console.Clear();
     bool closeApp = false;
     while (!closeApp)
     {
+        Console.Clear();
         Console.WriteLine("\nMAIN MENU");
         Console.WriteLine("\nWhat would you like to do?");
         Console.WriteLine("\nType 0 to Close Application.");
-        Console.WriteLine("Type 1 to View All records.");
+        Console.WriteLine("Type 1 to View All Records.");
         Console.WriteLine("Type 2 to Insert Record.");
         Console.WriteLine("Type 3 to Delete Record.");
         Console.WriteLine("Type 4 to Update Record.");
-        Console.WriteLine("--------------------------\n");
+        Console.WriteLine("----------------------------------------\n");
 
         string? commandInput = Console.ReadLine();
 
@@ -44,26 +44,31 @@ static void GetUserInput()
                 Console.WriteLine("Goodbye!");
                 break;
             case "1":
-                Console.WriteLine("view");
+                Console.WriteLine("Showing All Records\n");
                 View();
                 break;
             case "2":
-                Console.WriteLine("insert");
+                Console.WriteLine("Inserting New Record\n");
                 Insert();
                 break;
             case "3":
-                Console.WriteLine("delete");
+                Console.WriteLine("Deleting Record\n");
                 Delete();
                 break;
             case "4":
-                Console.WriteLine("update record");
+                Console.WriteLine("Updating Record\n");
                 Update();
                 break;
             default:
-                Console.WriteLine("invalid");
+                Console.WriteLine("Invalid Command\n");
                 break;
         }
-
+        Console.Write("Press 'n' and Enter to close the app, or press any other key and Enter to continue: ");
+        string? option = Console.ReadLine();
+        if (option == "n")
+        {
+            closeApp = true;
+        }
     }
 }
 
@@ -71,7 +76,7 @@ static void Insert()
 {
     string date = GetDateInput();
 
-    int quantity = GetNumberInput("quantity: 0 to return");
+    int quantity = GetNumberInput("Please insert the quantity of the activity. (must be whole number)");
 
     string connectionString = @"Data Source=habit-tracker.db";
 
@@ -112,7 +117,7 @@ static void View()
 
         if (!reader.HasRows)
         {
-            Console.WriteLine("no rows found");
+            Console.WriteLine("Empty Records.");
         }
 
         while (reader.Read())
@@ -133,17 +138,19 @@ static void View()
         Console.WriteLine($"Database error: {ex.Message}");
     }
 
-    Console.WriteLine("----------------------\n");
+    Console.WriteLine("----------------------------------------");
+    Console.WriteLine("ID\t| Date\t\t| Quantity");
+    Console.WriteLine("----------------------------------------");
     foreach (DrinkingWater dw in tableData)
     {
-        Console.WriteLine($"{dw.Id} - {dw.Date.ToString("dd-MM-yyyy", CultureInfo.CurrentCulture)} - Quantity: {dw.Quantity}");
+        Console.WriteLine($"{dw.Id}\t| {dw.Date.ToString("dd-MM-yyyy", CultureInfo.CurrentCulture)}\t| {dw.Quantity}");
     }
-    Console.WriteLine("----------------------\n");
+    Console.WriteLine("----------------------------------------\n");
 }
 
 static void Delete()
 {
-    int id = GetNumberInput("id to delete");
+    int id = GetNumberInput("Please insert activity ID.");
 
     try
     {
@@ -158,7 +165,7 @@ static void Delete()
 
         if (affectedRows == 0)
         {
-            Console.WriteLine($"id {id} not found");
+            Console.WriteLine($"Activity with id: {id} not found.");
         }
 
         connection.Close();
@@ -171,7 +178,7 @@ static void Delete()
 
 static void Update()
 {
-    int id = GetNumberInput("id to update");
+    int id = GetNumberInput("Please insert activity ID.");
 
     try
     {
@@ -186,13 +193,13 @@ static void Update()
 
         if (checkQuery == 0)
         {
-            Console.WriteLine($"id {id} doesnt exists");
+            Console.WriteLine($"Activity with id: {id} not found");
             return;
         }
 
         string date = GetDateInput();
 
-        int quantity = GetNumberInput("quantity: 0 to return");
+        int quantity = GetNumberInput("Please insert the quantity of the activity. (must be whole number)");
 
         using SqliteCommand updateCmd = connection.CreateCommand();
         updateCmd.CommandText = $"UPDATE drinking_water set Date='{date}', Quantity={quantity} WHERE Id = {id}";
@@ -216,35 +223,29 @@ static string GetDateInput()
 
     do
     {
-        Console.WriteLine("Please insert the date (dd-mm-yy): type \"today\" to use today, 0 to return");
+        Console.WriteLine("Please insert the date (dd-mm-yy).\nEnter \"today\" to use today.");
         dateInput = Console.ReadLine();
 
         if (string.IsNullOrWhiteSpace(dateInput))
         {
-            Console.WriteLine("cannot be empty");
+            Console.WriteLine("Date cannot be empty.");
             continue;
         }
 
-        if (dateInput == "today")
+        if (dateInput.Equals("today", StringComparison.OrdinalIgnoreCase))
         {
             dateInput = DateTime.Today.ToString("dd-MM-yy", CultureInfo.CurrentCulture);
         }
 
         if (!DateTime.TryParseExact(dateInput, "dd-MM-yy", CultureInfo.CurrentCulture, DateTimeStyles.None, out _))
         {
-            Console.WriteLine("Invalid date. (format: dd-mm-yy)");
+            Console.WriteLine("Invalid date format.");
             continue;
         }
 
         validDate = true;
 
     } while (!validDate);
-
-    // insanity
-    // if (dateInput == "0")
-    // {
-    //     GetUserInput();
-    // }
 
     return dateInput;
 }
@@ -262,31 +263,25 @@ static int GetNumberInput(string message)
 
         if (string.IsNullOrWhiteSpace(numberInput))
         {
-            Console.WriteLine("cannot be empty");
+            Console.WriteLine("Input cannot be empty.");
             continue;
         }
 
         if (!int.TryParse(numberInput, out number))
         {
-            Console.WriteLine("not a valid number");
+            Console.WriteLine("Input is not a valid number.");
             continue;
         }
 
         if (number <= 0)
         {
-            Console.WriteLine("must be more than 0");
+            Console.WriteLine("Input must be greater than 0");
             continue;
         }
 
         validNumber = true;
 
     } while (!validNumber);
-
-    // insanity
-    // if (numberInput == "0")
-    // {
-    //     GetUserInput();
-    // }
 
     return number;
 }
