@@ -187,15 +187,28 @@ static void Update()
         connection.Open();
 
         using SqliteCommand tableCmd = connection.CreateCommand();
-        tableCmd.CommandText = $"SELECT EXISTS(SELECT 1 FROM drinking_water WHERE Id = @id)";
+        tableCmd.CommandText = $"SELECT * FROM drinking_water WHERE Id = @id";
         _ = tableCmd.Parameters.AddWithValue("@id", id);
-        int checkQuery = Convert.ToInt32(tableCmd.ExecuteScalar(), CultureInfo.CurrentCulture);
+        using SqliteDataReader reader = tableCmd.ExecuteReader();
 
-        if (checkQuery == 0)
+        if (!reader.Read())
         {
             Console.WriteLine($"Activity with id: {id} not found");
             return;
         }
+
+        DrinkingWater dw = new()
+        {
+            Id = reader.GetInt32(0),
+            Date = DateTime.ParseExact(reader.GetString(1), "dd-MM-yy", CultureInfo.CurrentCulture),
+            Quantity = reader.GetInt32(2)
+        };
+
+        Console.WriteLine("\nShowing previous value\n");
+        Console.WriteLine("----------------------------------------");
+        Console.WriteLine("ID\t| Date\t\t| Quantity");
+        Console.WriteLine("----------------------------------------");
+        Console.WriteLine($"{dw.Id}\t| {dw.Date.ToString("dd-MM-yyyy", CultureInfo.CurrentCulture)}\t| {dw.Quantity}");
 
         string date = GetDateInput();
 
