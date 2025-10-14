@@ -75,46 +75,63 @@ static void Insert()
 
     string connectionString = @"Data Source=habit-tracker.db";
 
-    using SqliteConnection connection = new(connectionString);
-    connection.Open();
+    try
+    {
+        using SqliteConnection connection = new(connectionString);
+        connection.Open();
 
-    SqliteCommand tableCmd = connection.CreateCommand();
-    tableCmd.CommandText = $"INSERT INTO drinking_water(date, quantity) VALUES ('{date}', '{quantity}')";
-    _ = tableCmd.ExecuteNonQuery();
+        SqliteCommand tableCmd = connection.CreateCommand();
+        tableCmd.CommandText = "INSERT INTO drinking_water(date, quantity) VALUES (@date, @quantity)";
+        _ = tableCmd.Parameters.AddWithValue("@date", date);
+        _ = tableCmd.Parameters.AddWithValue("@quantity", quantity);
+        _ = tableCmd.ExecuteNonQuery();
 
-    connection.Close();
+        connection.Close();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Database error: {ex.Message}");
+    }
 }
 
 static void View()
 {
     string connectionString = @"Data Source=habit-tracker.db";
-    using SqliteConnection connection = new(connectionString);
-    connection.Open();
-
-    SqliteCommand tableCmd = connection.CreateCommand();
-    tableCmd.CommandText = $"SELECT * FROM drinking_water";
-
     List<DrinkingWater> tableData = [];
 
-    SqliteDataReader reader = tableCmd.ExecuteReader();
-
-    if (!reader.HasRows)
+    try
     {
-        Console.WriteLine("no rows found");
-    }
+        using SqliteConnection connection = new(connectionString);
+        connection.Open();
 
-    while (reader.Read())
-    {
-        DrinkingWater drinkingWater = new()
+        SqliteCommand tableCmd = connection.CreateCommand();
+        tableCmd.CommandText = $"SELECT * FROM drinking_water";
+
+
+        SqliteDataReader reader = tableCmd.ExecuteReader();
+
+        if (!reader.HasRows)
         {
-            Id = reader.GetInt32(0),
-            Date = DateTime.ParseExact(reader.GetString(1), "dd-MM-yy", CultureInfo.CurrentCulture),
-            Quantity = reader.GetInt32(2)
-        };
+            Console.WriteLine("no rows found");
+        }
 
-        tableData.Add(drinkingWater);
+        while (reader.Read())
+        {
+            DrinkingWater drinkingWater = new()
+            {
+                Id = reader.GetInt32(0),
+                Date = DateTime.ParseExact(reader.GetString(1), "dd-MM-yy", CultureInfo.CurrentCulture),
+                Quantity = reader.GetInt32(2)
+            };
+
+            tableData.Add(drinkingWater);
+        }
+        connection.Close();
     }
-    connection.Close();
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Database error: {ex.Message}");
+    }
 
     Console.WriteLine("----------------------\n");
     foreach (DrinkingWater dw in tableData)
@@ -126,95 +143,147 @@ static void View()
 
 static void Delete()
 {
-    // how do you delete, with what id
     int id = GetNumberInput("id to delete");
 
-    string connectionString = @"Data Source=habit-tracker.db";
-    using SqliteConnection connection = new(connectionString);
-    connection.Open();
+    try
+    {
+        string connectionString = @"Data Source=habit-tracker.db";
+        using SqliteConnection connection = new(connectionString);
+        connection.Open();
 
-    SqliteCommand tableCmd = connection.CreateCommand();
-    tableCmd.CommandText = $"DELETE FROM drinking_water WHERE Id = {id}";
-    _ = tableCmd.ExecuteNonQuery();
+        SqliteCommand tableCmd = connection.CreateCommand();
+        tableCmd.CommandText = $"DELETE FROM drinking_water WHERE Id = @id";
+        _ = tableCmd.Parameters.AddWithValue("@id", id);
+        int affectedRows = tableCmd.ExecuteNonQuery();
 
-    //TODO: handle when not exists
+        if (affectedRows == 0)
+        {
+            Console.WriteLine($"id {id} not found");
+        }
 
-    connection.Close();
+        connection.Close();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Database error: {ex.Message}");
+    }
 }
 
 static void Update()
 {
     int id = GetNumberInput("id to update");
-    // how do you update, with what id
-    string connectionString = @"Data Source=habit-tracker.db";
-    using SqliteConnection connection = new(connectionString);
-    connection.Open();
 
-    SqliteCommand tableCmd = connection.CreateCommand();
-    tableCmd.CommandText = $"SELECT EXISTS(SELECT 1 FROM drinking_water WHERE Id = {id})";
-    int checkQuery = Convert.ToInt32(tableCmd.ExecuteScalar(), CultureInfo.CurrentCulture);
-
-    if (checkQuery == 0)
+    try
     {
-        Console.WriteLine($"id {id} doesnt exists");
-        return;
+        string connectionString = @"Data Source=habit-tracker.db";
+        using SqliteConnection connection = new(connectionString);
+        connection.Open();
+
+        SqliteCommand tableCmd = connection.CreateCommand();
+        tableCmd.CommandText = $"SELECT EXISTS(SELECT 1 FROM drinking_water WHERE Id = @id)";
+        _ = tableCmd.Parameters.AddWithValue("@id", id);
+        int checkQuery = Convert.ToInt32(tableCmd.ExecuteScalar(), CultureInfo.CurrentCulture);
+
+        if (checkQuery == 0)
+        {
+            Console.WriteLine($"id {id} doesnt exists");
+            return;
+        }
+
+        string date = GetDateInput();
+
+        int quantity = GetNumberInput("quantity: 0 to return");
+
+        SqliteCommand updateCmd = connection.CreateCommand();
+        updateCmd.CommandText = $"UPDATE drinking_water set Date='{date}', Quantity={quantity} WHERE Id = {id}";
+        _ = updateCmd.Parameters.AddWithValue("@date", date);
+        _ = updateCmd.Parameters.AddWithValue("@quantity", quantity);
+        _ = updateCmd.Parameters.AddWithValue("@id", id);
+        _ = updateCmd.ExecuteNonQuery();
+
+        connection.Close();
     }
-
-    string date = GetDateInput();
-
-    int quantity = GetNumberInput("quantity: 0 to return");
-
-    SqliteCommand updateCmd = connection.CreateCommand();
-    updateCmd.CommandText = $"UPDATE drinking_water set Date='{date}', Quantity={quantity} WHERE Id = {id}";
-    _ = updateCmd.ExecuteNonQuery();
-
-    connection.Close();
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Database error: {ex.Message}");
+    }
 }
 
 static string GetDateInput()
 {
-    Console.WriteLine("Please insert the date: type 0 to return");
+    string? dateInput = "";
+    bool validDate = false;
 
-    string? dateInput = Console.ReadLine();
-
-    while (string.IsNullOrWhiteSpace(dateInput))
+    do
     {
-        Console.WriteLine("cannot be empty");
-        Console.WriteLine("Please insert the date: type 0 to return");
+        Console.WriteLine("Please insert the date (dd-mm-yy): type 0 to return");
         dateInput = Console.ReadLine();
-    }
+
+        if (string.IsNullOrWhiteSpace(dateInput))
+        {
+            Console.WriteLine("cannot be empty");
+            continue;
+        }
+
+        if (!DateTime.TryParseExact(dateInput, "dd-MM-yy", CultureInfo.CurrentCulture, DateTimeStyles.None, out _))
+        {
+            Console.WriteLine("Invalid date. (format: dd-mm-yy)");
+            continue;
+        }
+
+        validDate = true;
+
+    } while (!validDate);
 
     // insanity
-    if (dateInput == "0")
-    {
-        GetUserInput();
-    }
+    // if (dateInput == "0")
+    // {
+    //     GetUserInput();
+    // }
 
     return dateInput;
 }
 
 static int GetNumberInput(string message)
 {
-    Console.WriteLine(message);
+    string? numberInput = "";
+    int number = 0;
+    bool validNumber = false;
 
-    string? numberInput = Console.ReadLine();
-
-    while (string.IsNullOrWhiteSpace(numberInput))
+    do
     {
-        Console.WriteLine("cannot be empty");
         Console.WriteLine(message);
         numberInput = Console.ReadLine();
-    }
+
+        if (string.IsNullOrWhiteSpace(numberInput))
+        {
+            Console.WriteLine("cannot be empty");
+            continue;
+        }
+
+        if (!int.TryParse(numberInput, out number))
+        {
+            Console.WriteLine("not a valid number");
+            continue;
+        }
+
+        if (number <= 0)
+        {
+            Console.WriteLine("must be more than 0");
+            continue;
+        }
+
+        validNumber = true;
+
+    } while (!validNumber);
 
     // insanity
-    if (numberInput == "0")
-    {
-        GetUserInput();
-    }
+    // if (numberInput == "0")
+    // {
+    //     GetUserInput();
+    // }
 
-    int finalInput = Convert.ToInt32(numberInput, CultureInfo.CurrentCulture);
-
-    return finalInput;
+    return number;
 }
 
 public class DrinkingWater
