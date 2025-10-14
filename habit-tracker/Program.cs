@@ -80,7 +80,7 @@ static void Insert()
         using SqliteConnection connection = new(connectionString);
         connection.Open();
 
-        SqliteCommand tableCmd = connection.CreateCommand();
+        using SqliteCommand tableCmd = connection.CreateCommand();
         tableCmd.CommandText = "INSERT INTO drinking_water(date, quantity) VALUES (@date, @quantity)";
         _ = tableCmd.Parameters.AddWithValue("@date", date);
         _ = tableCmd.Parameters.AddWithValue("@quantity", quantity);
@@ -104,11 +104,11 @@ static void View()
         using SqliteConnection connection = new(connectionString);
         connection.Open();
 
-        SqliteCommand tableCmd = connection.CreateCommand();
+        using SqliteCommand tableCmd = connection.CreateCommand();
         tableCmd.CommandText = $"SELECT * FROM drinking_water";
 
 
-        SqliteDataReader reader = tableCmd.ExecuteReader();
+        using SqliteDataReader reader = tableCmd.ExecuteReader();
 
         if (!reader.HasRows)
         {
@@ -151,7 +151,7 @@ static void Delete()
         using SqliteConnection connection = new(connectionString);
         connection.Open();
 
-        SqliteCommand tableCmd = connection.CreateCommand();
+        using SqliteCommand tableCmd = connection.CreateCommand();
         tableCmd.CommandText = $"DELETE FROM drinking_water WHERE Id = @id";
         _ = tableCmd.Parameters.AddWithValue("@id", id);
         int affectedRows = tableCmd.ExecuteNonQuery();
@@ -179,7 +179,7 @@ static void Update()
         using SqliteConnection connection = new(connectionString);
         connection.Open();
 
-        SqliteCommand tableCmd = connection.CreateCommand();
+        using SqliteCommand tableCmd = connection.CreateCommand();
         tableCmd.CommandText = $"SELECT EXISTS(SELECT 1 FROM drinking_water WHERE Id = @id)";
         _ = tableCmd.Parameters.AddWithValue("@id", id);
         int checkQuery = Convert.ToInt32(tableCmd.ExecuteScalar(), CultureInfo.CurrentCulture);
@@ -194,7 +194,7 @@ static void Update()
 
         int quantity = GetNumberInput("quantity: 0 to return");
 
-        SqliteCommand updateCmd = connection.CreateCommand();
+        using SqliteCommand updateCmd = connection.CreateCommand();
         updateCmd.CommandText = $"UPDATE drinking_water set Date='{date}', Quantity={quantity} WHERE Id = {id}";
         _ = updateCmd.Parameters.AddWithValue("@date", date);
         _ = updateCmd.Parameters.AddWithValue("@quantity", quantity);
