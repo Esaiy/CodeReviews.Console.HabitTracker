@@ -2,10 +2,10 @@
 using Microsoft.Data.Sqlite;
 
 string connectionString = @"Data Source=habit-tracker.db";
-SqliteConnection connection = new(connectionString);
+using SqliteConnection connection = new(connectionString);
 
 connection.Open();
-SqliteCommand tableCmd = connection.CreateCommand();
+using SqliteCommand tableCmd = connection.CreateCommand();
 
 tableCmd.CommandText =
 @"CREATE TABLE IF NOT EXISTS drinking_water (
@@ -20,7 +20,7 @@ connection.Close();
 
 GetUserInput();
 
-static void GetUserInput()
+void GetUserInput()
 {
     bool closeApp = false;
     while (!closeApp)
@@ -72,7 +72,7 @@ static void GetUserInput()
     }
 }
 
-static void Insert()
+void Insert()
 {
     string date = GetDateInput();
 
@@ -99,7 +99,7 @@ static void Insert()
     }
 }
 
-static void View()
+void View()
 {
     string connectionString = @"Data Source=habit-tracker.db";
     List<DrinkingWater> tableData = [];
@@ -148,7 +148,7 @@ static void View()
     Console.WriteLine("----------------------------------------\n");
 }
 
-static void Delete()
+void Delete()
 {
     int id = GetNumberInput("Please insert activity ID.");
 
@@ -176,7 +176,7 @@ static void Delete()
     }
 }
 
-static void Update()
+void Update()
 {
     int id = GetNumberInput("Please insert activity ID.");
 
@@ -229,7 +229,7 @@ static void Update()
     }
 }
 
-static string GetDateInput()
+string GetDateInput()
 {
     string? dateInput = "";
     bool validDate = false;
@@ -263,7 +263,7 @@ static string GetDateInput()
     return dateInput;
 }
 
-static int GetNumberInput(string message)
+int GetNumberInput(string message)
 {
     string? numberInput = "";
     int number = 0;
