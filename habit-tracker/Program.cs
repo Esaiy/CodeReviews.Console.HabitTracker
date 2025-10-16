@@ -4,6 +4,7 @@ using Microsoft.Data.Sqlite;
 string connectionString = @"Data Source=habit-tracker.db;Foreign Keys=True;";
 
 MigrateDatabase();
+SeedDatabase();
 
 GetUserInput();
 
@@ -29,9 +30,8 @@ void GetUserInput()
         switch (commandInput)
         {
             case "0":
-                closeApp = true;
                 Console.WriteLine("Goodbye!");
-                break;
+                return;
             case "1":
                 Console.WriteLine("Showing All Habit Type\n");
                 List<HabitType> habitTypes = GetAllHabitTypes();
@@ -304,7 +304,7 @@ int GetNumberInput(string message)
 
 string GetStringInput(string message)
 {
-    string? input = "";
+    string? input;
 
     while (true)
     {
@@ -425,6 +425,7 @@ void ShowAllHabitTypes(List<HabitType> habitTypes)
     {
         Console.WriteLine($"{h.Id}\t| {h.Name,-14}| {h.UnitOfMeasure}");
     }
+    Console.WriteLine("----------------------------------------\n");
 }
 
 int SelectHabit()
@@ -457,6 +458,101 @@ int SelectHabit()
     return id;
 }
 
+void SeedDatabase()
+{
+    string[] habits = ["Coding", "Prompting", "Running", "Walking", "Swimming", "Gaming"];
+    string[] unit = ["hours", "hours", "KM", "KM", "times", "times"];
+
+    if (GetAllHabitTypes().Count > 0)
+    {
+        return;
+    }
+
+    Random rand = new();
+
+    try
+    {
+        using SqliteConnection connection = new(connectionString);
+        connection.Open();
+
+        using SqliteCommand tableCmd = connection.CreateCommand();
+
+        tableCmd.CommandText = "INSERT INTO habit_type(Name, UnitOfMeasure) VALUES (@Name, @UnitOfMeasure)";
+
+        SqliteParameter pName = tableCmd.CreateParameter();
+        pName.ParameterName = "@Name";
+        _ = tableCmd.Parameters.Add(pName);
+
+        SqliteParameter pUnitOfMeasure = tableCmd.CreateParameter();
+        pUnitOfMeasure.ParameterName = "@UnitOfMeasure";
+        _ = tableCmd.Parameters.Add(pUnitOfMeasure);
+
+        for (int i = 0; i < habits.Length; i++)
+        {
+            pName.Value = habits[i];
+            pUnitOfMeasure.Value = unit[i];
+            _ = tableCmd.ExecuteNonQuery();
+        }
+
+        List<HabitType> habitTypes = GetAllHabitTypes();
+        Dictionary<string, int> mapDb = [];
+        foreach (HabitType habitType in habitTypes)
+        {
+            mapDb[habitType.Name] = habitType.Id;
+        }
+
+        List<Habit> toBeInserted = [];
+        for (int i = 0; i < 100; i++)
+        {
+            DateTime start = new(2010, 1, 1);
+            DateTime end = DateTime.Today;
+            int range = (end - start).Days;
+
+            int randomTypeId = rand.Next(1, habits.Length);
+            randomTypeId = mapDb[habits[randomTypeId]];
+
+            DateTime randomDate = start.AddDays(rand.Next(range));
+
+            int randomQuantity = rand.Next(1, 100);
+
+            toBeInserted.Add(new Habit()
+            {
+                HabitType = new HabitType() { Id = randomTypeId },
+                Date = randomDate,
+                Quantity = randomQuantity
+            });
+        }
+
+        tableCmd.CommandText = "INSERT INTO habit(HabitType, date, quantity) VALUES (@habitType, @date, @quantity)";
+
+        SqliteParameter pHabitType = tableCmd.CreateParameter();
+        pHabitType.ParameterName = "@habitType";
+        _ = tableCmd.Parameters.Add(pHabitType);
+
+        SqliteParameter pDate = tableCmd.CreateParameter();
+        pDate.ParameterName = "@date";
+        _ = tableCmd.Parameters.Add(pDate);
+
+        SqliteParameter pQuantity = tableCmd.CreateParameter();
+        pQuantity.ParameterName = "@quantity";
+        _ = tableCmd.Parameters.Add(pQuantity);
+
+        foreach (Habit habit in toBeInserted)
+        {
+            pHabitType.Value = habit.HabitType.Id;
+            pDate.Value = habit.Date.ToString("dd-MM-yy", CultureInfo.CurrentCulture);
+            pQuantity.Value = habit.Quantity;
+            _ = tableCmd.ExecuteNonQuery();
+        }
+        connection.Close();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Database error: {ex.Message}");
+    }
+
+}
+
 public class HabitType
 {
     public int Id
@@ -465,13 +561,13 @@ public class HabitType
         set;
     }
 
-    public string Name
+    public string? Name
     {
         get;
         set;
     }
 
-    public string UnitOfMeasure
+    public string? UnitOfMeasure
     {
         get;
         set;
