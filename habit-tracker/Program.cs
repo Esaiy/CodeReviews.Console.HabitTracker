@@ -48,19 +48,19 @@ void GetUserInput()
                 break;
             case "4":
                 Console.WriteLine("Showing All Habit Records\n");
-                View();
+                ViewRecord();
                 break;
             case "5":
                 Console.WriteLine("Inserting New Habit Record\n");
-                Insert();
+                InsertRecord();
                 break;
             case "6":
                 Console.WriteLine("Deleting Habit Record\n");
-                Delete();
+                DeleteRecord();
                 break;
             case "7":
                 Console.WriteLine("Updating Habit Record\n");
-                Update();
+                UpdateRecord();
                 break;
             default:
                 Console.WriteLine("Invalid Command\n");
@@ -75,7 +75,7 @@ void GetUserInput()
     }
 }
 
-void Insert()
+void InsertRecord()
 {
     int habitTypeId = SelectHabit();
 
@@ -103,7 +103,7 @@ void Insert()
     }
 }
 
-void View()
+void ViewRecord()
 {
     List<Habit> tableData = [];
 
@@ -144,17 +144,10 @@ void View()
         Console.WriteLine($"Database error: {ex.Message}");
     }
 
-    Console.WriteLine("----------------------------------------------------------");
-    Console.WriteLine("ID\t| Habit\t\t| Date\t\t| Quantity");
-    Console.WriteLine("----------------------------------------------------------");
-    foreach (Habit h in tableData)
-    {
-        Console.WriteLine($"{h.Id}\t| {h.HabitType.Name,-14}| {h.Date.ToString("dd-MM-yyyy", CultureInfo.CurrentCulture)}\t| {h.Quantity}");
-    }
-    Console.WriteLine("----------------------------------------------------------");
+    PrintRecord(tableData);
 }
 
-void Delete()
+void DeleteRecord()
 {
     int id = GetNumberInput("Please insert activity ID.");
 
@@ -181,7 +174,7 @@ void Delete()
     }
 }
 
-void Update()
+void UpdateRecord()
 {
     int id = GetNumberInput("Please insert activity ID.");
 
@@ -213,11 +206,7 @@ void Update()
         };
 
         Console.WriteLine("\nShowing previous value\n");
-        Console.WriteLine("----------------------------------------------------------");
-        Console.WriteLine("ID\t| Habit\t\t| Date\t\t| Quantity");
-        Console.WriteLine("----------------------------------------------------------");
-        Console.WriteLine($"{h.Id}\t| {h.HabitType.Name,-14}| {h.Date.ToString("dd-MM-yyyy", CultureInfo.CurrentCulture)}\t| {h.Quantity}");
-        Console.WriteLine("----------------------------------------------------------");
+        PrintRecord([h]);
 
         string date = GetDateInput();
 
@@ -605,6 +594,18 @@ void Report()
     {
         Console.WriteLine($"Database error: {ex.Message}");
     }
+}
+
+void PrintRecord(List<Habit> habits)
+{
+    Console.WriteLine("----------------------------------------------------------");
+    Console.WriteLine("ID\t| Habit\t\t| Date\t\t| Quantity");
+    Console.WriteLine("----------------------------------------------------------");
+    foreach (Habit h in habits)
+    {
+        Console.WriteLine($"{h.Id}\t| {h.HabitType.Name,-14}| {h.Date.ToString("dd-MM-yyyy", CultureInfo.CurrentCulture)}\t| {h.Quantity}");
+    }
+    Console.WriteLine("----------------------------------------------------------");
 }
 
 public class HabitType
