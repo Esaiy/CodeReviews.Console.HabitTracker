@@ -17,12 +17,13 @@ void GetUserInput()
         Console.WriteLine("\nMAIN MENU");
         Console.WriteLine("\nWhat would you like to do?");
         Console.WriteLine("\nType 0 to Close Application.");
-        Console.WriteLine("Type 1 to View All Habit Type.");
-        Console.WriteLine("Type 2 to Insert New Habit Type.");
-        Console.WriteLine("Type 3 to View All Habit Records.");
-        Console.WriteLine("Type 4 to Insert Habit Record.");
-        Console.WriteLine("Type 5 to Delete Habit Record.");
-        Console.WriteLine("Type 6 to Update Habit Record.");
+        Console.WriteLine("Type 1 to View Habit Report.");
+        Console.WriteLine("Type 2 to View All Habit Type.");
+        Console.WriteLine("Type 3 to Insert New Habit Type.");
+        Console.WriteLine("Type 4 to View All Habit Records.");
+        Console.WriteLine("Type 5 to Insert Habit Record.");
+        Console.WriteLine("Type 6 to Delete Habit Record.");
+        Console.WriteLine("Type 7 to Update Habit Record.");
         Console.WriteLine("----------------------------------------\n");
 
         string? commandInput = Console.ReadLine();
@@ -33,27 +34,31 @@ void GetUserInput()
                 Console.WriteLine("Goodbye!");
                 return;
             case "1":
+                Console.WriteLine("Generating Report\n");
+                Report();
+                break;
+            case "2":
                 Console.WriteLine("Showing All Habit Type\n");
                 List<HabitType> habitTypes = GetAllHabitTypes();
                 ShowAllHabitTypes(habitTypes);
                 break;
-            case "2":
+            case "3":
                 Console.WriteLine("Inserting New Habit Type\n");
                 InsertNewHabitType();
                 break;
-            case "3":
+            case "4":
                 Console.WriteLine("Showing All Habit Records\n");
                 View();
                 break;
-            case "4":
+            case "5":
                 Console.WriteLine("Inserting New Habit Record\n");
                 Insert();
                 break;
-            case "5":
+            case "6":
                 Console.WriteLine("Deleting Habit Record\n");
                 Delete();
                 break;
-            case "6":
+            case "7":
                 Console.WriteLine("Updating Habit Record\n");
                 Update();
                 break;
@@ -208,10 +213,11 @@ void Update()
         };
 
         Console.WriteLine("\nShowing previous value\n");
-        Console.WriteLine("----------------------------------------");
+        Console.WriteLine("----------------------------------------------------------");
         Console.WriteLine("ID\t| Habit\t\t| Date\t\t| Quantity");
-        Console.WriteLine("----------------------------------------");
-        Console.WriteLine($"{h.Id}\t| {h.HabitType.Name,-14}\t| {h.Date.ToString("dd-MM-yyyy", CultureInfo.CurrentCulture)}\t| {h.Quantity}");
+        Console.WriteLine("----------------------------------------------------------");
+        Console.WriteLine($"{h.Id}\t| {h.HabitType.Name,-14}| {h.Date.ToString("dd-MM-yyyy", CultureInfo.CurrentCulture)}\t| {h.Quantity}");
+        Console.WriteLine("----------------------------------------------------------");
 
         string date = GetDateInput();
 
@@ -513,7 +519,7 @@ void SeedDatabase()
 
             DateTime randomDate = start.AddDays(rand.Next(range));
 
-            int randomQuantity = rand.Next(1, 100);
+            int randomQuantity = rand.Next(1, 10);
 
             toBeInserted.Add(new Habit()
             {
@@ -551,6 +557,54 @@ void SeedDatabase()
         Console.WriteLine($"Database error: {ex.Message}");
     }
 
+}
+
+void Report()
+{
+    try
+    {
+        using SqliteConnection connection = new(connectionString);
+        connection.Open();
+
+        using SqliteCommand tableCmd = connection.CreateCommand();
+        tableCmd.CommandText =
+        @"SELECT
+            habit_type.name,
+            COUNT(habit.id) AS count,
+            IFNULL(SUM(habit.quantity), 0) AS total_quantity,
+            habit_type.unitofmeasure
+        FROM habit_type
+        LEFT JOIN habit ON habit.habittype = habit_type.id
+        GROUP BY habit_type.name, habit_type.unitofmeasure
+        ORDER BY count DESC;"
+;
+
+        using SqliteDataReader reader = tableCmd.ExecuteReader();
+
+        if (!reader.HasRows)
+        {
+            Console.WriteLine("Nothing to report.");
+        }
+
+        Console.WriteLine("This is the report of your habit so far\n");
+        while (reader.Read())
+        {
+            if (reader.GetInt32(1) == 0)
+            {
+                Console.WriteLine($"You have not done any {reader.GetString(0)}");
+            }
+            else
+            {
+                Console.WriteLine($"{reader.GetString(0)}: {reader.GetInt32(1)} times with a total quantity of {reader.GetInt32(2)} {reader.GetString(3)}");
+            }
+        }
+        Console.WriteLine();
+        connection.Close();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Database error: {ex.Message}");
+    }
 }
 
 public class HabitType
